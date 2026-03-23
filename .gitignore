@@ -1,0 +1,17 @@
+# 字幕檔案與文字報告
+*.srt
+*.txt
+
+# JSON 掃描報告
+report.json
+review_matches.json
+
+# 忽略特定的舊版說明文字檔
+@README：將原始碼程式變成CLI功能操作：以sub-fixer為例.txt
+
+# ====================
+# 特例保留區：必要基礎測試檔案
+# ====================
+!test_input.srt
+!test_output.srt
+!test_rules.txt

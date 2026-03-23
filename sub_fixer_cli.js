@@ -137,14 +137,37 @@ function shiftSubtitleTime(subText, shiftMs) {
     });
 }
 
+function inferPaths() {
+    if (!params.sub) return;
+    if (!params.rules) {
+        params.rules = params.sub.includes('_input.srt') 
+            ? params.sub.replace('_input.srt', '_rules.txt') 
+            : params.sub.replace('.srt', '_rules.txt');
+    }
+    if (!params.out) {
+        params.out = params.sub.includes('_input.srt') 
+            ? params.sub.replace('_input.srt', '_output.srt') 
+            : params.sub.replace('.srt', '_output.srt');
+    }
+}
+
 function handleScan() {
+    inferPaths();
+    if (params.sub && params.out && !params.out.endsWith('.json') && params.out.endsWith('.srt')) {
+        params.out = 'report.json';
+    }
     if (!params.sub || !params.rules || !params.out) {
-        console.error("錯誤: 缺少參數。請提供 --sub, --rules, 與 --out。");
+        console.error("錯誤: 缺少參數。請提供 --sub。");
         process.exit(1);
     }
     try {
         const subData = fs.readFileSync(params.sub, 'utf-8');
-        const rulesData = fs.readFileSync(params.rules, 'utf-8');
+        let rulesData = '';
+        if (fs.existsSync(params.rules)) {
+            rulesData = fs.readFileSync(params.rules, 'utf-8');
+        } else {
+            console.log("⚠️ 規則檔不存在，將使用空規則庫進行掃描。");
+        }
         const rules = parseCorrectionText(rulesData);
 
         const blocks = subData.trim().split(/\r?\n\r?\n/);
@@ -242,17 +265,24 @@ function handleAddRule() {
 }
 
 function handleApply() {
+    inferPaths();
     if (!params.sub || !params.rules || !params.out) {
         if (params.json) {
-            console.log(JSON.stringify({ status: "error", message: "Missing arguments. Need --sub, --rules, --out" }));
+            console.log(JSON.stringify({ status: "error", message: "Missing arguments. Need --sub" }));
         } else {
-            console.error("錯誤: 缺少參數。請提供 --sub, --rules, 與 --out。");
+            console.error("錯誤: 缺少參數。請至少提供 --sub。");
         }
         process.exit(1);
     }
     try {
         const subData = fs.readFileSync(params.sub, 'utf-8');
-        const rulesData = fs.readFileSync(params.rules, 'utf-8');
+        let rulesData = '';
+        if (fs.existsSync(params.rules)) {
+            rulesData = fs.readFileSync(params.rules, 'utf-8');
+        } else {
+            console.log(`⚠️ 規則檔 ${params.rules} 不存在，已自動幫您建立空規則檔。`);
+            fs.writeFileSync(params.rules, '', 'utf-8');
+        }
         const rules = parseCorrectionText(rulesData);
 
         const { outputText, count } = applyCorrections(subData, rules);
